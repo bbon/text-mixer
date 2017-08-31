@@ -1,8 +1,74 @@
-# NAME
+#! /usr/bin/perl
+use strict;
+use warnings;
+use utf8;
+
+use Encode qw(is_utf8 _utf8_on _utf8_off);
+
+die "Usage:\n\t$0 filename-ru-utf8.txt\n or\n\t$0 filename-ru-utf8.txt 50\n" unless @ARGV;
+
+
+my $text = '';
+
+{
+    open my $f, shift(@ARGV);
+    local $/;
+    $text =<$f>;
+    close $f;
+}
+
+_utf8_on $text;
+
+my $complexity = shift(@ARGV) || 20;
+my $chance     = (100 - $complexity)/100;
+
+
+srand();
+$text =~ s/[АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя]{2,}/&process($&)/gsme;
+
+print $text;
+exit;
+
+sub process() {
+    my ($word)  = @_;
+
+    my $len     = length $word;
+    my $onehalf = int(length($word)/2);
+    my @symbols = split '', $word;
+
+    my $ucfirst = $symbols[0] =~ m/[АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ]{1,1}/ ? 1 : 0;
+
+    for my $i (1..$onehalf) {
+        if (rand > $chance) {
+            my $p1 = int(1+$len*rand);
+            my $p2 = int(1+$len*rand);
+            if ($p1 != $p2) {
+                my $tmp          = $symbols[$p1 -1];
+                $symbols[$p1 -1] = $symbols[$p2 -1];
+                $symbols[$p2 -1] = $tmp;
+            }
+        }
+    }
+
+    my $changed = join '', @symbols;
+
+    if ($ucfirst) {
+        $changed =~ tr/АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ/абвгдеёжзийклмнопрстуфхцчшщъыьэюя/;
+        $changed = ucfirst $changed;
+    }
+
+    return $changed;
+}
+
+__END__
+
+=encoding utf-8
+
+=head1 NAME
 
 text-mixer (tmix.pl) - утилита для перемешивания букв в словах (в русскоязычных текстах)
 
-# SYNOPSIS
+=head1 SYNOPSIS
 
 Скрипт можно использовать для желающих потренировать свой собственный мозг во время чтения.
 
@@ -14,7 +80,7 @@ text-mixer (tmix.pl) - утилита для перемешивания букв
 
 Результат появится на экране.
 
-# EXAMPLE
+=head1 EXAMPLE
 
 Входной текст:
 
@@ -68,10 +134,12 @@ text-mixer (tmix.pl) - утилита для перемешивания букв
 
 Как бдуто в бурях сеть опкой!
 
-# LICENSE
+=head1 LICENSE
 
 Copyright (C) bbon.
 
-# AUTHOR
+=head1 AUTHOR
 
 bbon <bbon@mail.ru>
+
+=cut
